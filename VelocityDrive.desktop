@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=VelocityDRIVE GUI
+Comment=Touch-friendly GUI for Microchip VelocityDRIVE CLI
+Exec=/home/kim/velocitydrive-touch-gui/VelocityDrive-GUI
+Icon=/home/kim/velocitydrive-touch-gui/static/img/icon.png
+Terminal=false
+Categories=Development;Electronics;Network;
+Keywords=microchip;tsn;lan9662;velocitydrive;
+StartupNotify=true
+StartupWMClass=VelocityDrive-GUI

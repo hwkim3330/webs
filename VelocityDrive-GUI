@@ -1,0 +1,111 @@
+#!/bin/bash
+#############################################################
+# VelocityDRIVE Touch GUI - One-Click Launcher
+# 한 번 클릭으로 모든 것을 자동 실행
+#############################################################
+
+# 스크립트 경로 자동 감지
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# 색상 정의
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# 로고 출력
+echo -e "${BLUE}"
+echo "╔═══════════════════════════════════════════════════════╗"
+echo "║     VelocityDRIVE Touch GUI - Microchip LAN9662      ║"
+echo "║              Powered by Claude Code                   ║"
+echo "╚═══════════════════════════════════════════════════════╝"
+echo -e "${NC}"
+
+# Python 체크
+if ! command -v python3 &> /dev/null; then
+    echo -e "${RED}❌ Python3가 설치되어 있지 않습니다.${NC}"
+    echo "설치: sudo apt-get install python3 python3-pip"
+    exit 1
+fi
+
+# 의존성 자동 설치
+echo -e "${YELLOW}📦 필요한 패키지 확인 중...${NC}"
+PACKAGES_NEEDED=false
+
+if ! python3 -c "import flask" 2>/dev/null; then
+    PACKAGES_NEEDED=true
+fi
+
+if [ "$PACKAGES_NEEDED" = true ]; then
+    echo -e "${YELLOW}📥 필요한 패키지 설치 중...${NC}"
+    pip3 install --break-system-packages -q flask flask-cors pyserial 2>/dev/null || \
+    pip3 install -q flask flask-cors pyserial 2>/dev/null
+    echo -e "${GREEN}✅ 패키지 설치 완료${NC}"
+fi
+
+# 기존 서버 종료
+pkill -f "python3 app.py" 2>/dev/null
+
+# 서버 시작
+echo -e "${GREEN}🚀 서버 시작 중...${NC}"
+python3 app.py > /tmp/velocitydrive.log 2>&1 &
+SERVER_PID=$!
+
+# 서버 시작 대기
+sleep 2
+
+# 서버 확인
+if kill -0 $SERVER_PID 2>/dev/null; then
+    echo -e "${GREEN}✅ 서버가 성공적으로 시작되었습니다! (PID: $SERVER_PID)${NC}"
+    echo ""
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}🌐 브라우저에서 접속:${NC}"
+    echo ""
+    echo -e "   ${BLUE}http://localhost:8080${NC}"
+    echo ""
+
+    # IP 주소 찾기
+    IP=$(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v 127.0.0.1 | head -1)
+    if [ ! -z "$IP" ]; then
+        echo -e "   ${BLUE}http://$IP:8080${NC} (외부 접속용)"
+    fi
+
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    # 브라우저 자동 열기
+    if [ -n "$DISPLAY" ]; then
+        echo -e "${YELLOW}🔄 브라우저 자동 실행 중...${NC}"
+        sleep 1
+
+        # 브라우저 열기 시도
+        if command -v xdg-open &> /dev/null; then
+            xdg-open http://localhost:8080 2>/dev/null &
+        elif command -v chromium-browser &> /dev/null; then
+            chromium-browser http://localhost:8080 2>/dev/null &
+        elif command -v firefox &> /dev/null; then
+            firefox http://localhost:8080 2>/dev/null &
+        fi
+
+        echo -e "${GREEN}✅ 브라우저가 열렸습니다!${NC}"
+    fi
+
+    echo ""
+    echo -e "${YELLOW}📌 종료하려면 Ctrl+C를 누르세요${NC}"
+    echo ""
+
+    # 종료 처리
+    trap 'echo -e "\n${RED}🛑 서버 종료 중...${NC}"; kill $SERVER_PID 2>/dev/null; exit 0' INT TERM
+
+    # 서버 모니터링
+    while kill -0 $SERVER_PID 2>/dev/null; do
+        sleep 1
+    done
+
+else
+    echo -e "${RED}❌ 서버 시작 실패!${NC}"
+    echo "로그 확인: cat /tmp/velocitydrive.log"
+    exit 1
+fi

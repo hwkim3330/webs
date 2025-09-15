@@ -1,0 +1,17 @@
+[Unit]
+Description=VelocityDRIVE Touch GUI Service
+After=multi-user.target graphical.target network.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/velocitydrive-touch-gui
+Environment="DISPLAY=:0"
+Environment="XAUTHORITY=/home/pi/.Xauthority"
+ExecStart=/home/pi/velocitydrive-touch-gui/start-gui.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=graphical.target

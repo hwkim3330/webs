@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>VelocityDRIVE Touch Control</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-left">
+            <img src="/static/img/microchip-logo.png" alt="Microchip" class="logo">
+            <h1>VelocityDRIVE Control</h1>
+        </div>
+        <div class="header-right">
+            <div class="connection-status" id="connectionStatus">
+                <i class="fas fa-circle"></i>
+                <span>Disconnected</span>
+            </div>
+            <button class="btn-icon" onclick="toggleSettings()">
+                <i class="fas fa-cog"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="main-nav">
+        <button class="nav-tab active" data-tab="dashboard">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>Dashboard</span>
+        </button>
+        <button class="nav-tab" data-tab="interfaces">
+            <i class="fas fa-network-wired"></i>
+            <span>Interfaces</span>
+        </button>
+        <button class="nav-tab" data-tab="tsn">
+            <i class="fas fa-clock"></i>
+            <span>TSN Config</span>
+        </button>
+        <button class="nav-tab" data-tab="ptp">
+            <i class="fas fa-sync"></i>
+            <span>PTP/1588</span>
+        </button>
+        <button class="nav-tab" data-tab="console">
+            <i class="fas fa-terminal"></i>
+            <span>Console</span>
+        </button>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <!-- Dashboard Tab -->
+        <div class="tab-content active" id="dashboard">
+            <div class="dashboard-grid">
+                <!-- Connection Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-plug"></i> Device Connection</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Serial Port</label>
+                            <select id="serialPort" class="form-control">
+                                <option value="/dev/ttyACM0">/dev/ttyACM0</option>
+                                <option value="/dev/ttyUSB0">/dev/ttyUSB0</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Baud Rate</label>
+                            <select id="baudRate" class="form-control">
+                                <option value="115200">115200</option>
+                                <option value="9600">9600</option>
+                                <option value="19200">19200</option>
+                                <option value="38400">38400</option>
+                            </select>
+                        </div>
+                        <div class="button-group">
+                            <button class="btn btn-primary" onclick="connectDevice()">
+                                <i class="fas fa-link"></i> Connect
+                            </button>
+                            <button class="btn btn-danger" onclick="disconnectDevice()">
+                                <i class="fas fa-unlink"></i> Disconnect
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Device Info Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-info-circle"></i> Device Information</h3>
+                        <button class="btn-icon" onclick="refreshDeviceInfo()">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="deviceInfo" class="info-list">
+                            <div class="info-item">
+                                <span class="info-label">Model:</span>
+                                <span class="info-value">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Version:</span>
+                                <span class="info-value">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Serial:</span>
+                                <span class="info-value">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Uptime:</span>
+                                <span class="info-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Stats Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-line"></i> Quick Statistics</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-value" id="txPackets">0</div>
+                                <div class="stat-label">TX Packets</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="rxPackets">0</div>
+                                <div class="stat-label">RX Packets</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="errorCount">0</div>
+                                <div class="stat-label">Errors</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="linkSpeed">-</div>
+                                <div class="stat-label">Link Speed</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="quick-actions">
+                            <button class="action-btn" onclick="resetDevice()">
+                                <i class="fas fa-redo"></i>
+                                <span>Reset Device</span>
+                            </button>
+                            <button class="action-btn" onclick="saveConfig()">
+                                <i class="fas fa-save"></i>
+                                <span>Save Config</span>
+                            </button>
+                            <button class="action-btn" onclick="loadConfig()">
+                                <i class="fas fa-upload"></i>
+                                <span>Load Config</span>
+                            </button>
+                            <button class="action-btn" onclick="exportLogs()">
+                                <i class="fas fa-download"></i>
+                                <span>Export Logs</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interfaces Tab -->
+        <div class="tab-content" id="interfaces">
+            <div class="interface-list" id="interfaceList">
+                <!-- Interface cards will be dynamically added here -->
+            </div>
+        </div>
+
+        <!-- TSN Configuration Tab -->
+        <div class="tab-content" id="tsn">
+            <div class="tsn-controls">
+                <!-- TAS Configuration -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-clock"></i> Time-Aware Shaper (TAS)</h3>
+                        <div class="switch">
+                            <input type="checkbox" id="tasEnabled">
+                            <label for="tasEnabled"></label>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Admin Base Time (ns)</label>
+                            <input type="number" id="tasBaseTime" class="form-control" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Cycle Time (ns)</label>
+                            <input type="number" id="tasCycleTime" class="form-control" value="200000000">
+                        </div>
+                        <div class="form-group">
+                            <label>Gate Control List</label>
+                            <div id="gateControlList" class="gate-list">
+                                <!-- Gate entries will be added here -->
+                            </div>
+                            <button class="btn btn-secondary" onclick="addGateEntry()">
+                                <i class="fas fa-plus"></i> Add Gate Entry
+                            </button>
+                        </div>
+                        <button class="btn btn-primary" onclick="applyTASConfig()">
+                            <i class="fas fa-check"></i> Apply Configuration
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CBS Configuration -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-coins"></i> Credit-Based Shaper (CBS)</h3>
+                        <div class="switch">
+                            <input type="checkbox" id="cbsEnabled">
+                            <label for="cbsEnabled"></label>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Traffic Class</label>
+                            <select id="cbsTrafficClass" class="form-control">
+                                <option value="0">TC0</option>
+                                <option value="1">TC1</option>
+                                <option value="2">TC2</option>
+                                <option value="3">TC3</option>
+                                <option value="4">TC4</option>
+                                <option value="5">TC5</option>
+                                <option value="6">TC6</option>
+                                <option value="7">TC7</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Idle Slope (bits/sec)</label>
+                            <input type="number" id="cbsIdleSlope" class="form-control" value="10000">
+                        </div>
+                        <div class="form-group">
+                            <label>Send Slope (bits/sec)</label>
+                            <input type="number" id="cbsSendSlope" class="form-control" value="-990000">
+                        </div>
+                        <div class="form-group">
+                            <label>Hi Credit</label>
+                            <input type="number" id="cbsHiCredit" class="form-control" value="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Lo Credit</label>
+                            <input type="number" id="cbsLoCredit" class="form-control" value="-100">
+                        </div>
+                        <button class="btn btn-primary" onclick="applyCBSConfig()">
+                            <i class="fas fa-check"></i> Apply Configuration
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PTP Tab -->
+        <div class="tab-content" id="ptp">
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-sync"></i> IEEE 1588 PTP Status</h3>
+                    <button class="btn-icon" onclick="refreshPTPStatus()">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="ptpStatus" class="ptp-status">
+                        <!-- PTP status will be displayed here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Console Tab -->
+        <div class="tab-content" id="console">
+            <div class="console-container">
+                <div class="console-output" id="consoleOutput"></div>
+                <div class="console-input">
+                    <input type="text" id="consoleInput" placeholder="Enter command..." class="form-control">
+                    <button class="btn btn-primary" onclick="sendCommand()">
+                        <i class="fas fa-paper-plane"></i> Send
+                    </button>
+                </div>
+                <div class="console-buttons">
+                    <button class="btn btn-secondary" onclick="clearConsole()">
+                        <i class="fas fa-eraser"></i> Clear
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportConsole()">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Settings</h3>
+                <button class="btn-icon" onclick="closeSettings()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Theme</label>
+                    <select id="theme" class="form-control">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                        <option value="auto">Auto</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Update Interval (ms)</label>
+                    <input type="number" id="updateInterval" class="form-control" value="1000">
+                </div>
+                <div class="form-group">
+                    <label>Auto-refresh</label>
+                    <div class="switch">
+                        <input type="checkbox" id="autoRefresh" checked>
+                        <label for="autoRefresh"></label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+                <button class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p>Processing...</p>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

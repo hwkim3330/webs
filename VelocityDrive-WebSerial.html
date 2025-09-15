@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>VelocityDRIVE WebSerial Control</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Complete CSS embedded for standalone operation */
+        :root {
+            --primary: #0066cc;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --info: #17a2b8;
+            --dark: #2c3e50;
+            --light: #f8f9fa;
+            --border-radius: 6px;
+            --touch-size: 44px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-header {
+            background: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-left h1 {
+            font-size: 20px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .connection-status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .connection-status.connected i {
+            color: var(--success);
+        }
+
+        .main-nav {
+            background: white;
+            display: flex;
+            overflow-x: auto;
+            border-bottom: 2px solid #e0e0e0;
+            scrollbar-width: none;
+        }
+
+        .main-nav::-webkit-scrollbar {
+            display: none;
+        }
+
+        .nav-tab {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 20px;
+            border: none;
+            background: none;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-height: var(--touch-size);
+        }
+
+        .nav-tab i {
+            font-size: 18px;
+            margin-bottom: 4px;
+        }
+
+        .nav-tab span {
+            font-size: 12px;
+        }
+
+        .nav-tab.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+        }
+
+        .nav-tab:hover {
+            background: #f8f9fa;
+        }
+
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 16px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header h3 {
+            font-size: 16px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-body {
+            padding: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            transition: border-color 0.3s;
+            min-height: var(--touch-size);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0,102,204,0.1);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-height: var(--touch-size);
+            min-width: 120px;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: #333;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        .grid-2col {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .console-container {
+            background: white;
+            border-radius: var(--border-radius);
+            display: flex;
+            flex-direction: column;
+            height: 500px;
+        }
+
+        .console-output {
+            flex: 1;
+            padding: 16px;
+            background: #1e1e1e;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .console-input {
+            display: flex;
+            padding: 10px;
+            background: #2d2d2d;
+            border-top: 1px solid #444;
+            align-items: center;
+        }
+
+        .console-input-field {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            padding: 8px;
+            outline: none;
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        .toast {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 250px;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--danger);
+        }
+
+        .toast.warning {
+            border-left: 4px solid var(--warning);
+        }
+
+        .toast.info {
+            border-left: 4px solid var(--info);
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-overlay p {
+            color: white;
+            margin-top: 16px;
+        }
+
+        .webserial-support {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: var(--border-radius);
+            padding: 12px;
+            margin-bottom: 16px;
+            color: #856404;
+        }
+
+        .webserial-support.error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        .webserial-support.success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .info-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .info-label {
+            font-weight: 500;
+            color: #666;
+        }
+
+        .info-value {
+            color: #333;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2col {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-tab span {
+                display: none;
+            }
+
+            .nav-tab {
+                padding: 12px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-left">
+            <h1><i class="fas fa-microchip"></i> VelocityDRIVE WebSerial Control</h1>
+        </div>
+        <div class="connection-status" id="connectionStatus">
+            <i class="fas fa-circle"></i>
+            <span id="connectionText">Disconnected</span>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="main-nav">
+        <button class="nav-tab active" data-tab="connect">
+            <i class="fas fa-plug"></i>
+            <span>Connect</span>
+        </button>
+        <button class="nav-tab" data-tab="terminal">
+            <i class="fas fa-terminal"></i>
+            <span>Terminal</span>
+        </button>
+        <button class="nav-tab" data-tab="commands">
+            <i class="fas fa-bolt"></i>
+            <span>Commands</span>
+        </button>
+        <button class="nav-tab" data-tab="tsn">
+            <i class="fas fa-clock"></i>
+            <span>TSN</span>
+        </button>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Connect Tab -->
+        <div class="tab-content active" id="connect">
+            <!-- WebSerial Support Check -->
+            <div id="webserialSupport" class="webserial-support">
+                <i class="fas fa-info-circle"></i>
+                <span>Checking WebSerial API support...</span>
+            </div>
+
+            <div class="grid-2col">
+                <!-- Connection Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-usb"></i> Serial Connection</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Baud Rate</label>
+                            <select id="baudRate" class="form-control">
+                                <option value="115200">115200</option>
+                                <option value="9600">9600</option>
+                                <option value="19200">19200</option>
+                                <option value="38400">38400</option>
+                                <option value="57600">57600</option>
+                            </select>
+                        </div>
+                        <div class="button-group">
+                            <button class="btn btn-primary" onclick="connectSerial()">
+                                <i class="fas fa-link"></i> Connect
+                            </button>
+                            <button class="btn btn-danger" onclick="disconnectSerial()">
+                                <i class="fas fa-unlink"></i> Disconnect
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Device Info Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-info-circle"></i> Device Information</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="deviceInfo" class="info-list">
+                            <div class="info-item">
+                                <span class="info-label">Status:</span>
+                                <span class="info-value" id="deviceStatus">Not Connected</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Port:</span>
+                                <span class="info-value" id="devicePort">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Baud Rate:</span>
+                                <span class="info-value" id="deviceBaud">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Data Received:</span>
+                                <span class="info-value" id="dataReceived">0 bytes</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-question-circle"></i> Instructions</h3>
+                </div>
+                <div class="card-body">
+                    <h4>🔌 How to Connect:</h4>
+                    <ol>
+                        <li><strong>Connect your VelocityDRIVE board</strong> via USB cable</li>
+                        <li><strong>Click "Connect"</strong> button above</li>
+                        <li><strong>Select your device</strong> from the browser dialog</li>
+                        <li><strong>Start using</strong> the Terminal or Commands tabs</li>
+                    </ol>
+
+                    <h4>📋 Requirements:</h4>
+                    <ul>
+                        <li><strong>Chrome/Edge 89+</strong> or <strong>Opera 75+</strong></li>
+                        <li><strong>HTTPS connection</strong> (or localhost)</li>
+                        <li><strong>Microchip VelocityDRIVE board</strong> connected via USB</li>
+                    </ul>
+
+                    <h4>⚠️ Browser Support:</h4>
+                    <p>This application uses the <strong>WebSerial API</strong> which requires a Chromium-based browser.
+                    Firefox and Safari are not supported yet.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terminal Tab -->
+        <div class="tab-content" id="terminal">
+            <div class="console-container">
+                <div class="console-output" id="consoleOutput">
+VelocityDRIVE WebSerial Terminal
+================================
+Connect your device first, then type commands below.
+
+Available commands:
+- device /dev/ttyACM0 type
+- device /dev/ttyACM0 get /ietf-system:system-state
+- device /dev/ttyACM0 get /ietf-interfaces:interfaces
+- device /dev/ttyACM0 yang
+
+Type 'clear' to clear this terminal.
+</div>
+                <div class="console-input">
+                    <span style="color: #0099ff; margin-right: 8px;">mvdct></span>
+                    <input type="text" id="consoleInput" class="console-input-field" placeholder="Enter command...">
+                    <button class="btn btn-primary" onclick="sendCommand()" style="margin-left: 10px;">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Commands Tab -->
+        <div class="tab-content" id="commands">
+            <div class="grid-2col">
+                <!-- Quick Commands -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-bolt"></i> Quick Commands</h3>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-primary" onclick="sendQuickCommand('device /dev/ttyACM0 type')" style="width: 100%; margin-bottom: 10px;">
+                            <i class="fas fa-info"></i> Get Device Type
+                        </button>
+                        <button class="btn btn-primary" onclick="sendQuickCommand('device /dev/ttyACM0 get /ietf-system:system-state')" style="width: 100%; margin-bottom: 10px;">
+                            <i class="fas fa-server"></i> Get System State
+                        </button>
+                        <button class="btn btn-primary" onclick="sendQuickCommand('device /dev/ttyACM0 get /ietf-interfaces:interfaces')" style="width: 100%; margin-bottom: 10px;">
+                            <i class="fas fa-network-wired"></i> Get Interfaces
+                        </button>
+                        <button class="btn btn-primary" onclick="sendQuickCommand('device /dev/ttyACM0 yang')" style="width: 100%; margin-bottom: 10px;">
+                            <i class="fas fa-book"></i> Show YANG Catalogs
+                        </button>
+                        <button class="btn btn-secondary" onclick="sendQuickCommand('list')" style="width: 100%;">
+                            <i class="fas fa-list"></i> List Devices
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Custom Command -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-edit"></i> Custom Command</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Device Path</label>
+                            <input type="text" id="devicePath" class="form-control" value="/dev/ttyACM0" placeholder="/dev/ttyACM0">
+                        </div>
+                        <div class="form-group">
+                            <label>Command</label>
+                            <select id="commandType" class="form-control">
+                                <option value="type">type - Get device type</option>
+                                <option value="get">get - Get YANG data</option>
+                                <option value="set">set - Set YANG data</option>
+                                <option value="delete">delete - Delete YANG data</option>
+                                <option value="yang">yang - Show YANG catalogs</option>
+                                <option value="firmware">firmware - Get firmware info</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Parameters (optional)</label>
+                            <input type="text" id="commandParams" class="form-control" placeholder="/ietf-system:system-state">
+                        </div>
+                        <button class="btn btn-success" onclick="sendCustomCommand()" style="width: 100%;">
+                            <i class="fas fa-play"></i> Execute Command
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TSN Tab -->
+        <div class="tab-content" id="tsn">
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-clock"></i> TSN Quick Commands</h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid-2col">
+                        <button class="btn btn-primary" onclick="sendQuickCommand('device /dev/ttyACM0 get /ieee1588-ptp:ptp')">
+                            <i class="fas fa-sync"></i> Get PTP Status
+                        </button>
+                        <button class="btn btn-primary" onclick="sendQuickCommand('device /dev/ttyACM0 get /ieee802-dot1q-sched:sched')">
+                            <i class="fas fa-calendar-alt"></i> Get TAS Schedule
+                        </button>
+                        <button class="btn btn-primary" onclick="sendQuickCommand('device /dev/ttyACM0 get /ieee802-dot1q-stream-filters-gates:stream-filters-gates')">
+                            <i class="fas fa-filter"></i> Get CBS Parameters
+                        </button>
+                        <button class="btn btn-primary" onclick="sendQuickCommand('device /dev/ttyACM0 get /ieee802-dot1cb:frer')">
+                            <i class="fas fa-shield-alt"></i> Get FRER Config
+                        </button>
+                    </div>
+
+                    <hr style="margin: 20px 0;">
+
+                    <h4>💡 TSN Commands Examples:</h4>
+                    <p><strong>Set PTP Configuration:</strong></p>
+                    <code>device /dev/ttyACM0 set /ieee1588-ptp:ptp '{"enabled": true, "domain": 0}'</code>
+
+                    <p><strong>Configure TAS Schedule:</strong></p>
+                    <code>device /dev/ttyACM0 set /ieee802-dot1q-sched:sched '{"admin-cycle-time": 1000000}'</code>
+
+                    <p><strong>Set CBS Parameters:</strong></p>
+                    <code>device /dev/ttyACM0 set /ieee802-dot1q-stream-filters-gates:stream-filters-gates '{"idle-slope": 750000}'</code>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p>Processing...</p>
+    </div>
+
+    <script>
+        // VelocityDRIVE WebSerial Application
+        class VelocityDriveWebSerial {
+            constructor() {
+                this.port = null;
+                this.reader = null;
+                this.writer = null;
+                this.isConnected = false;
+                this.receivedData = 0;
+
+                this.init();
+            }
+
+            init() {
+                this.checkWebSerialSupport();
+                this.setupEventListeners();
+                this.initTabs();
+            }
+
+            checkWebSerialSupport() {
+                const supportDiv = document.getElementById('webserialSupport');
+
+                if ('serial' in navigator) {
+                    supportDiv.className = 'webserial-support success';
+                    supportDiv.innerHTML = '<i class="fas fa-check-circle"></i> WebSerial API supported! You can connect to your VelocityDRIVE board.';
+                } else {
+                    supportDiv.className = 'webserial-support error';
+                    supportDiv.innerHTML = '<i class="fas fa-times-circle"></i> WebSerial API not supported. Please use Chrome/Edge 89+ or Opera 75+.';
+                }
+            }
+
+            setupEventListeners() {
+                // Tab navigation
+                document.querySelectorAll('.nav-tab').forEach(tab => {
+                    tab.addEventListener('click', (e) => this.switchTab(e.target.closest('.nav-tab')));
+                });
+
+                // Console input
+                const consoleInput = document.getElementById('consoleInput');
+                if (consoleInput) {
+                    consoleInput.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            this.sendCommand();
+                        }
+                    });
+                }
+            }
+
+            initTabs() {
+                const activeTab = document.querySelector('.nav-tab.active');
+                if (activeTab) {
+                    this.switchTab(activeTab);
+                }
+            }
+
+            switchTab(tabElement) {
+                if (!tabElement) return;
+
+                document.querySelectorAll('.nav-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                tabElement.classList.add('active');
+
+                const tabName = tabElement.dataset.tab;
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+
+                const targetContent = document.getElementById(tabName);
+                if (targetContent) {
+                    targetContent.classList.add('active');
+                }
+            }
+
+            async connectSerial() {
+                if (!('serial' in navigator)) {
+                    this.showToast('WebSerial API not supported. Use Chrome/Edge 89+', 'error');
+                    return;
+                }
+
+                try {
+                    this.showLoading(true);
+
+                    // Request port
+                    this.port = await navigator.serial.requestPort();
+
+                    // Get baud rate
+                    const baudRate = parseInt(document.getElementById('baudRate').value);
+
+                    // Open port
+                    await this.port.open({ baudRate });
+
+                    // Setup reader and writer
+                    this.reader = this.port.readable.getReader();
+                    this.writer = this.port.writable.getWriter();
+
+                    // Start reading
+                    this.startReading();
+
+                    // Update UI
+                    this.isConnected = true;
+                    this.updateConnectionStatus(true);
+                    this.updateDeviceInfo();
+
+                    this.showToast('Connected successfully!', 'success');
+
+                } catch (error) {
+                    console.error('Connection error:', error);
+                    this.showToast('Connection failed: ' + error.message, 'error');
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            async disconnectSerial() {
+                try {
+                    if (this.reader) {
+                        await this.reader.cancel();
+                        await this.reader.releaseLock();
+                        this.reader = null;
+                    }
+
+                    if (this.writer) {
+                        await this.writer.releaseLock();
+                        this.writer = null;
+                    }
+
+                    if (this.port) {
+                        await this.port.close();
+                        this.port = null;
+                    }
+
+                    this.isConnected = false;
+                    this.updateConnectionStatus(false);
+                    this.showToast('Disconnected', 'info');
+
+                } catch (error) {
+                    console.error('Disconnect error:', error);
+                    this.showToast('Disconnect error: ' + error.message, 'error');
+                }
+            }
+
+            async startReading() {
+                const output = document.getElementById('consoleOutput');
+
+                try {
+                    while (this.port.readable && this.isConnected) {
+                        const { value, done } = await this.reader.read();
+                        if (done) break;
+
+                        // Convert received data to text
+                        const text = new TextDecoder().decode(value);
+                        this.receivedData += value.length;
+
+                        // Display in console
+                        output.textContent += text;
+                        output.scrollTop = output.scrollHeight;
+
+                        // Update stats
+                        document.getElementById('dataReceived').textContent = this.receivedData + ' bytes';
+                    }
+                } catch (error) {
+                    console.error('Reading error:', error);
+                    this.showToast('Reading error: ' + error.message, 'error');
+                }
+            }
+
+            async sendData(data) {
+                if (!this.isConnected || !this.writer) {
+                    this.showToast('Not connected to device', 'warning');
+                    return false;
+                }
+
+                try {
+                    // Add newline if not present
+                    if (!data.endsWith('\n')) {
+                        data += '\n';
+                    }
+
+                    // Encode and send
+                    const encoder = new TextEncoder();
+                    await this.writer.write(encoder.encode(data));
+
+                    return true;
+                } catch (error) {
+                    console.error('Send error:', error);
+                    this.showToast('Send error: ' + error.message, 'error');
+                    return false;
+                }
+            }
+
+            async sendCommand() {
+                const input = document.getElementById('consoleInput');
+                const output = document.getElementById('consoleOutput');
+                const command = input.value.trim();
+
+                if (!command) return;
+
+                // Handle special commands
+                if (command.toLowerCase() === 'clear') {
+                    output.textContent = 'VelocityDRIVE WebSerial Terminal\n================================\n';
+                    input.value = '';
+                    return;
+                }
+
+                // Display command in console
+                output.textContent += `mvdct> ${command}\n`;
+
+                // Send to device
+                const success = await this.sendData(command);
+                if (success) {
+                    input.value = '';
+                    this.showToast('Command sent', 'success');
+                }
+
+                output.scrollTop = output.scrollHeight;
+            }
+
+            async sendQuickCommand(command) {
+                const output = document.getElementById('consoleOutput');
+
+                // Display command
+                output.textContent += `mvdct> ${command}\n`;
+
+                // Send to device
+                const success = await this.sendData(command);
+                if (success) {
+                    this.showToast('Command sent: ' + command, 'success');
+                }
+
+                output.scrollTop = output.scrollHeight;
+            }
+
+            async sendCustomCommand() {
+                const devicePath = document.getElementById('devicePath').value;
+                const commandType = document.getElementById('commandType').value;
+                const params = document.getElementById('commandParams').value;
+
+                let command = `device ${devicePath} ${commandType}`;
+                if (params) {
+                    command += ` ${params}`;
+                }
+
+                await this.sendQuickCommand(command);
+            }
+
+            updateConnectionStatus(connected) {
+                const status = document.getElementById('connectionStatus');
+                const text = document.getElementById('connectionText');
+
+                if (connected) {
+                    status.classList.add('connected');
+                    text.textContent = 'Connected';
+                } else {
+                    status.classList.remove('connected');
+                    text.textContent = 'Disconnected';
+                }
+            }
+
+            updateDeviceInfo() {
+                if (this.isConnected && this.port) {
+                    document.getElementById('deviceStatus').textContent = 'Connected';
+                    document.getElementById('devicePort').textContent = 'WebSerial Port';
+                    document.getElementById('deviceBaud').textContent = document.getElementById('baudRate').value;
+                } else {
+                    document.getElementById('deviceStatus').textContent = 'Not Connected';
+                    document.getElementById('devicePort').textContent = '-';
+                    document.getElementById('deviceBaud').textContent = '-';
+                }
+            }
+
+            showLoading(show) {
+                const overlay = document.getElementById('loadingOverlay');
+                if (overlay) {
+                    overlay.classList.toggle('show', show);
+                }
+            }
+
+            showToast(message, type = 'info') {
+                const container = document.getElementById('toastContainer');
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+
+                const icon = {
+                    success: 'check-circle',
+                    error: 'exclamation-circle',
+                    warning: 'exclamation-triangle',
+                    info: 'info-circle'
+                }[type] || 'info-circle';
+
+                toast.innerHTML = `
+                    <i class="fas fa-${icon}"></i>
+                    <span>${message}</span>
+                `;
+
+                container.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.style.animation = 'slideOut 0.3s';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+        }
+
+        // Global instance
+        let app;
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            app = new VelocityDriveWebSerial();
+        });
+
+        // Global functions for onclick handlers
+        function connectSerial() { app.connectSerial(); }
+        function disconnectSerial() { app.disconnectSerial(); }
+        function sendCommand() { app.sendCommand(); }
+        function sendQuickCommand(cmd) { app.sendQuickCommand(cmd); }
+        function sendCustomCommand() { app.sendCustomCommand(); }
+    </script>
+</body>
+</html>
