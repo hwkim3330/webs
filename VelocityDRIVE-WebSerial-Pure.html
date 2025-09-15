@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VelocityDRIVE Touch GUI - Pure WebSerial</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .connection-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff4757;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.connected {
+            background: #2ed573;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-text {
+            color: white;
+            font-weight: 500;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #2ed573, #17c0eb);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            padding: 1rem 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 48px;
+            min-width: 120px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: rgba(255, 255, 255, 0.2);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            overflow-x: auto;
+            gap: 0.5rem;
+        }
+
+        .tab {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            padding: 1rem 1.5rem;
+            border-radius: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            min-height: 48px;
+        }
+
+        .tab.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-weight: 600;
+        }
+
+        .tab-content {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            color: white;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 0.5rem;
+            color: white;
+            padding: 1rem;
+            font-size: 1rem;
+            min-height: 48px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #2ed573;
+            box-shadow: 0 0 0 2px rgba(46, 213, 115, 0.3);
+        }
+
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .console {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            color: #2ed573;
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .console-line {
+            margin-bottom: 0.5rem;
+        }
+
+        .console-timestamp {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.8rem;
+        }
+
+        .yang-tree {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .tree-node {
+            color: white;
+            padding: 0.5rem;
+            border-radius: 0.3rem;
+            cursor: pointer;
+            user-select: text;
+            margin: 0.2rem 0;
+        }
+
+        .tree-node:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .tree-indent {
+            margin-left: 1rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .toast {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: rgba(46, 213, 115, 0.9);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.error {
+            background: rgba(255, 71, 87, 0.9);
+        }
+
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 VelocityDRIVE Touch GUI</h1>
+            <p class="subtitle">Pure WebSerial Implementation - No Server Required</p>
+        </div>
+
+        <div class="connection-panel">
+            <div class="connection-status">
+                <div class="status-indicator" id="connectionStatus"></div>
+                <span class="status-text" id="connectionText">연결 안됨</span>
+            </div>
+            <button class="btn" id="connectBtn">🔌 시리얼 포트 연결</button>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="device">🔌 Device</button>
+            <button class="tab" data-tab="yang">🌳 YANG</button>
+            <button class="tab" data-tab="tsn">⏰ TSN</button>
+            <button class="tab" data-tab="protocols">🔄 Protocols</button>
+            <button class="tab" data-tab="firmware">💾 Firmware</button>
+            <button class="tab" data-tab="console">💻 Console</button>
+        </div>
+
+        <!-- Device Tab -->
+        <div class="tab-content active" id="device">
+            <h3 style="color: white; margin-bottom: 1rem;">Device Management</h3>
+            <div class="form-group">
+                <label class="form-label">Device Type</label>
+                <input type="text" class="form-input" id="deviceType" readonly placeholder="Not connected">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Firmware Version</label>
+                <input type="text" class="form-input" id="firmwareVersion" readonly placeholder="Not connected">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Serial Number</label>
+                <input type="text" class="form-input" id="serialNumber" readonly placeholder="Not connected">
+            </div>
+            <div class="btn-group">
+                <button class="btn" id="pingBtn" disabled>📡 Ping Device</button>
+                <button class="btn btn-secondary" id="systemInfoBtn" disabled>ℹ️ System Info</button>
+            </div>
+        </div>
+
+        <!-- YANG Tab -->
+        <div class="tab-content" id="yang">
+            <h3 style="color: white; margin-bottom: 1rem;">YANG Data Operations</h3>
+            <div class="form-group">
+                <label class="form-label">Path</label>
+                <input type="text" class="form-input" id="yangPath" placeholder="/ietf-system:system-state/platform">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Data (for PUT operations)</label>
+                <textarea class="form-input" id="yangData" rows="4" placeholder='{"hostname": "velocitydrive"}'></textarea>
+            </div>
+            <div class="btn-group">
+                <button class="btn" id="yangGetBtn" disabled>📥 GET</button>
+                <button class="btn" id="yangPutBtn" disabled>📤 PUT</button>
+                <button class="btn" id="yangDeleteBtn" disabled>🗑️ DELETE</button>
+            </div>
+            <div class="yang-tree" id="yangTree">
+                <!-- YANG data will be displayed here -->
+            </div>
+        </div>
+
+        <!-- TSN Tab -->
+        <div class="tab-content" id="tsn">
+            <h3 style="color: white; margin-bottom: 1rem;">TSN Configuration</h3>
+            <div class="form-group">
+                <label class="form-label">TSN Feature</label>
+                <select class="form-input" id="tsnFeature">
+                    <option value="ptp">IEEE 1588 PTP (Precision Time Protocol)</option>
+                    <option value="tas">IEEE 802.1Qbv TAS (Time-Aware Shaper)</option>
+                    <option value="cbs">IEEE 802.1Qav CBS (Credit-Based Shaper)</option>
+                    <option value="frer">IEEE 802.1CB FRER (Frame Replication)</option>
+                </select>
+            </div>
+            <div class="btn-group">
+                <button class="btn" id="tsnStatusBtn" disabled>📊 Status</button>
+                <button class="btn" id="tsnConfigBtn" disabled>⚙️ Configure</button>
+                <button class="btn btn-secondary" id="tsnStatsBtn" disabled>📈 Statistics</button>
+            </div>
+        </div>
+
+        <!-- Protocols Tab -->
+        <div class="tab-content" id="protocols">
+            <h3 style="color: white; margin-bottom: 1rem;">Protocol Operations</h3>
+            <div class="form-group">
+                <label class="form-label">Protocol</label>
+                <select class="form-input" id="protocolType">
+                    <option value="coap">CoAP (Constrained Application Protocol)</option>
+                    <option value="mup1">MUP1 (Microchip UART Protocol)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Message</label>
+                <textarea class="form-input" id="protocolMessage" rows="4" placeholder="Protocol-specific message"></textarea>
+            </div>
+            <div class="btn-group">
+                <button class="btn" id="sendProtocolBtn" disabled">📡 Send Message</button>
+                <button class="btn btn-secondary" id="clearProtocolBtn">🧹 Clear</button>
+            </div>
+        </div>
+
+        <!-- Firmware Tab -->
+        <div class="tab-content" id="firmware">
+            <h3 style="color: white; margin-bottom: 1rem;">Firmware Management</h3>
+            <div class="form-group">
+                <label class="form-label">Current Version</label>
+                <input type="text" class="form-input" id="currentFirmware" readonly placeholder="Unknown">
+            </div>
+            <div class="btn-group">
+                <button class="btn" id="checkUpdateBtn" disabled>🔍 Check Updates</button>
+                <button class="btn btn-secondary" id="backupBtn" disabled>💾 Backup</button>
+            </div>
+        </div>
+
+        <!-- Console Tab -->
+        <div class="tab-content" id="console">
+            <h3 style="color: white; margin-bottom: 1rem;">Raw Protocol Console</h3>
+            <div class="console" id="protocolConsole">
+                <div class="console-line">
+                    <span class="console-timestamp">[00:00:00]</span> Ready for WebSerial communication...
+                </div>
+            </div>
+            <div class="form-group" style="margin-top: 1rem;">
+                <label class="form-label">Raw Command</label>
+                <input type="text" class="form-input" id="rawCommand" placeholder="Type raw protocol command...">
+            </div>
+            <div class="btn-group">
+                <button class="btn" id="sendRawBtn" disabled>📤 Send Raw</button>
+                <button class="btn btn-secondary" id="clearConsoleBtn">🧹 Clear Console</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // MUP1 Protocol Implementation
+        class MUP1Protocol {
+            constructor() {
+                this.SOF = 0x3E; // '>'
+                this.EOF = 0x3C; // '<'
+                this.ESCAPE = 0x5C; // '\\'
+
+                this.COMMANDS = {
+                    ANNOUNCEMENT: 0x41, // 'A'
+                    COAP: 0x43,        // 'C'
+                    PING: 0x50,        // 'P'
+                    TRACE: 0x54,       // 'T'
+                    SYSTEM: 0x53       // 'S'
+                };
+
+                this.ESCAPE_MAP = {
+                    0x00: 0x30, 0xFF: 0x46, 0x3E: 0x3E, 0x3C: 0x3C, 0x5C: 0x5C
+                };
+            }
+
+            encodeFrame(type, data = new Uint8Array()) {
+                const frame = [];
+                frame.push(this.SOF);
+                frame.push(type);
+
+                for (const byte of data) {
+                    if (this.needsEscape(byte)) {
+                        frame.push(this.ESCAPE);
+                        frame.push(this.ESCAPE_MAP[byte]);
+                    } else {
+                        frame.push(byte);
+                    }
+                }
+
+                frame.push(this.EOF);
+                if (frame.length % 2 === 0) {
+                    frame.push(this.EOF);
+                }
+
+                const checksum = this.calculateChecksum(frame);
+                const checksumStr = checksum.toString(16).toUpperCase().padStart(4, '0');
+                for (const char of checksumStr) {
+                    frame.push(char.charCodeAt(0));
+                }
+
+                return new Uint8Array(frame);
+            }
+
+            decodeFrame(buffer) {
+                if (buffer.length < 8) throw new Error('Frame too short');
+                if (buffer[0] !== this.SOF) throw new Error('Invalid start of frame');
+
+                const type = buffer[1];
+                const data = [];
+                let i = 2;
+                let escaping = false;
+
+                while (i < buffer.length - 4) {
+                    const byte = buffer[i];
+                    if (byte === this.EOF) break;
+
+                    if (escaping) {
+                        data.push(this.unescapeByte(byte));
+                        escaping = false;
+                    } else if (byte === this.ESCAPE) {
+                        escaping = true;
+                    } else {
+                        data.push(byte);
+                    }
+                    i++;
+                }
+
+                return {
+                    type: String.fromCharCode(type),
+                    data: new Uint8Array(data)
+                };
+            }
+
+            needsEscape(byte) {
+                return byte === 0x00 || byte === 0xFF || byte === 0x3E || byte === 0x3C || byte === 0x5C;
+            }
+
+            unescapeByte(escapedByte) {
+                const reverseMap = { 0x30: 0x00, 0x46: 0xFF, 0x3E: 0x3E, 0x3C: 0x3C, 0x5C: 0x5C };
+                return reverseMap[escapedByte] || escapedByte;
+            }
+
+            calculateChecksum(data) {
+                let sum = 0;
+                for (let i = 0; i < data.length; i += 2) {
+                    const value = i + 1 < data.length ? (data[i] << 8) | data[i + 1] : data[i] << 8;
+                    sum += value;
+                }
+                while (sum >> 16) {
+                    sum = (sum & 0xFFFF) + (sum >> 16);
+                }
+                return (~sum) & 0xFFFF;
+            }
+
+            createPing() {
+                return this.encodeFrame(this.COMMANDS.PING);
+            }
+
+            createSystemRequest(command) {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(command);
+                return this.encodeFrame(this.COMMANDS.SYSTEM, data);
+            }
+
+            createCoapFrame(coapMessage) {
+                return this.encodeFrame(this.COMMANDS.COAP, coapMessage);
+            }
+
+            parseAnnouncement(data) {
+                const decoder = new TextDecoder();
+                const text = decoder.decode(data).trim();
+                const info = { deviceType: 'Unknown', firmwareVersion: 'Unknown', serialNumber: 'Unknown' };
+
+                if (text.startsWith('VelocitySP-v')) {
+                    const [front, p1, p2, p3] = text.split(/\s+/);
+                    const parts = front.split('-');
+                    if (parts.length >= 4) {
+                        info.firmwareVersion = parts[1].replace(/^v/, '');
+                        info.deviceType = parts[2];
+                        info.serialNumber = parts[3];
+                    }
+                }
+                return info;
+            }
+        }
+
+        // Simple CBOR implementation (minimal)
+        function encodeCBOR(obj) {
+            if (obj === null) return new Uint8Array([0xF6]);
+            if (typeof obj === 'boolean') return new Uint8Array([obj ? 0xF5 : 0xF4]);
+            if (typeof obj === 'number') {
+                if (obj >= 0 && obj < 24) return new Uint8Array([obj]);
+                if (obj < 256) return new Uint8Array([0x18, obj]);
+                return new Uint8Array([0x19, obj >> 8, obj & 0xFF]);
+            }
+            if (typeof obj === 'string') {
+                const bytes = new TextEncoder().encode(obj);
+                const len = bytes.length;
+                if (len < 24) return new Uint8Array([0x60 + len, ...bytes]);
+                if (len < 256) return new Uint8Array([0x78, len, ...bytes]);
+                return new Uint8Array([0x79, len >> 8, len & 0xFF, ...bytes]);
+            }
+            return new Uint8Array([0xF6]); // null as fallback
+        }
+
+        function decodeCBOR(data) {
+            if (data.length === 0) return null;
+            const first = data[0];
+            if (first === 0xF6) return null;
+            if (first === 0xF5) return true;
+            if (first === 0xF4) return false;
+            if (first < 24) return first;
+            if (first === 0x18) return data[1];
+            if (first === 0x19) return (data[1] << 8) | data[2];
+            if ((first & 0xE0) === 0x60) {
+                const len = first & 0x1F;
+                return new TextDecoder().decode(data.slice(1, 1 + len));
+            }
+            return data; // Return raw data if can't decode
+        }
+
+        // CoAP Client Implementation
+        class CoAPClient {
+            constructor(protocol, serialConnection) {
+                this.protocol = protocol;
+                this.connection = serialConnection;
+                this.messageId = 1;
+                this.pendingRequests = new Map();
+
+                this.METHODS = { GET: 1, POST: 2, PUT: 3, DELETE: 4, FETCH: 5 };
+            }
+
+            async request(method, uri, payload = null) {
+                const mid = this.messageId++;
+                const message = this.buildMessage(method, uri, payload, mid);
+                const frame = this.protocol.createCoapFrame(message);
+
+                const promise = new Promise((resolve, reject) => {
+                    this.pendingRequests.set(mid, { resolve, reject });
+                    setTimeout(() => {
+                        if (this.pendingRequests.has(mid)) {
+                            this.pendingRequests.delete(mid);
+                            reject(new Error('Request timeout'));
+                        }
+                    }, 10000);
+                });
+
+                await this.connection.sendBytes(frame);
+                return promise;
+            }
+
+            buildMessage(method, uri, payload, messageId) {
+                const header = [];
+                header.push((1 << 6) | (0 << 4) | 0); // Version 1, Type CON, TKL 0
+                header.push(method);
+                header.push((messageId >> 8) & 0xFF);
+                header.push(messageId & 0xFF);
+
+                // Simple Uri-Path encoding
+                const segments = uri.split('/').filter(s => s);
+                let prevOption = 0;
+
+                segments.forEach(segment => {
+                    const delta = 11 - prevOption;
+                    const length = segment.length;
+                    header.push((delta << 4) | length);
+                    for (let i = 0; i < segment.length; i++) {
+                        header.push(segment.charCodeAt(i));
+                    }
+                    prevOption = 11;
+                });
+
+                // Content-Format for CBOR
+                const delta = 12 - prevOption;
+                header.push((delta << 4) | 1);
+                header.push(60);
+
+                if (payload) {
+                    header.push(0xFF);
+                    const encoded = encodeCBOR(payload);
+                    header.push(...encoded);
+                }
+
+                return new Uint8Array(header);
+            }
+
+            parseResponse(data) {
+                if (data.length < 4) throw new Error('Invalid CoAP message');
+
+                const code = data[1];
+                const messageId = (data[2] << 8) | data[3];
+
+                let payloadStart = data.length;
+                for (let i = 4; i < data.length; i++) {
+                    if (data[i] === 0xFF) {
+                        payloadStart = i + 1;
+                        break;
+                    }
+                }
+
+                let payload = null;
+                if (payloadStart < data.length) {
+                    payload = decodeCBOR(data.slice(payloadStart));
+                }
+
+                return { code, messageId, payload };
+            }
+
+            handleResponse(data) {
+                try {
+                    const response = this.parseResponse(data);
+                    const pending = this.pendingRequests.get(response.messageId);
+
+                    if (pending) {
+                        this.pendingRequests.delete(response.messageId);
+                        const responseClass = Math.floor(response.code / 32);
+                        if (responseClass === 2) {
+                            pending.resolve(response.payload);
+                        } else {
+                            pending.reject(new Error(`CoAP Error ${response.code}`));
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to handle CoAP response:', error);
+                }
+            }
+
+            async get(uri) {
+                return this.request(this.METHODS.GET, uri);
+            }
+
+            async put(uri, data) {
+                return this.request(this.METHODS.PUT, uri, data);
+            }
+
+            async delete(uri) {
+                return this.request(this.METHODS.DELETE, uri);
+            }
+        }
+
+        // WebSerial Connection Manager
+        class WebSerialConnection {
+            constructor() {
+                this.port = null;
+                this.reader = null;
+                this.writer = null;
+                this.connected = false;
+                this.buffer = new Uint8Array();
+                this.onDataCallback = null;
+                this.protocol = new MUP1Protocol();
+                this.coap = new CoAPClient(this.protocol, this);
+            }
+
+            async connect() {
+                if (!navigator.serial) {
+                    throw new Error('WebSerial not supported');
+                }
+
+                this.port = await navigator.serial.requestPort();
+                await this.port.open({ baudRate: 115200 });
+
+                this.reader = this.port.readable.getReader();
+                this.writer = this.port.writable.getWriter();
+                this.connected = true;
+
+                this.startReading();
+                return true;
+            }
+
+            async disconnect() {
+                this.connected = false;
+                if (this.reader) {
+                    await this.reader.cancel();
+                    await this.reader.releaseLock();
+                }
+                if (this.writer) {
+                    await this.writer.releaseLock();
+                }
+                if (this.port) {
+                    await this.port.close();
+                }
+            }
+
+            async startReading() {
+                while (this.connected && this.reader) {
+                    try {
+                        const { value, done } = await this.reader.read();
+                        if (done) break;
+
+                        this.processData(value);
+                    } catch (error) {
+                        console.error('Serial read error:', error);
+                        break;
+                    }
+                }
+            }
+
+            processData(data) {
+                // Append to buffer
+                const newBuffer = new Uint8Array(this.buffer.length + data.length);
+                newBuffer.set(this.buffer);
+                newBuffer.set(data, this.buffer.length);
+                this.buffer = newBuffer;
+
+                // Try to parse frames
+                this.parseFrames();
+            }
+
+            parseFrames() {
+                let offset = 0;
+                while (offset < this.buffer.length) {
+                    const sofIndex = this.buffer.indexOf(this.protocol.SOF, offset);
+                    if (sofIndex === -1) break;
+
+                    // Find end of frame (checksum)
+                    let eofIndex = -1;
+                    for (let i = sofIndex + 8; i < this.buffer.length - 3; i++) {
+                        if (this.buffer[i] === this.protocol.EOF) {
+                            eofIndex = i;
+                            break;
+                        }
+                    }
+
+                    if (eofIndex === -1) break; // Incomplete frame
+
+                    // Check for double EOF
+                    let frameEnd = eofIndex + 1;
+                    if (frameEnd < this.buffer.length && this.buffer[frameEnd] === this.protocol.EOF) {
+                        frameEnd++;
+                    }
+
+                    // Extract frame including checksum
+                    if (frameEnd + 4 <= this.buffer.length) {
+                        const frameData = this.buffer.slice(sofIndex, frameEnd + 4);
+
+                        try {
+                            const frame = this.protocol.decodeFrame(frameData);
+                            this.handleFrame(frame, frameData);
+                        } catch (error) {
+                            console.error('Frame decode error:', error);
+                        }
+
+                        offset = frameEnd + 4;
+                    } else {
+                        break; // Wait for more data
+                    }
+                }
+
+                // Remove processed data from buffer
+                if (offset > 0) {
+                    this.buffer = this.buffer.slice(offset);
+                }
+            }
+
+            handleFrame(frame, rawData) {
+                this.log(`RX: ${frame.type} frame (${rawData.length} bytes)`);
+
+                switch (frame.type) {
+                    case 'A': // Announcement
+                        const info = this.protocol.parseAnnouncement(frame.data);
+                        this.updateDeviceInfo(info);
+                        break;
+                    case 'C': // CoAP response
+                        this.coap.handleResponse(frame.data);
+                        break;
+                    case 'P': // Ping response
+                        this.log('Ping response received');
+                        break;
+                    default:
+                        this.log(`Unknown frame type: ${frame.type}`);
+                }
+            }
+
+            async sendBytes(data) {
+                if (!this.writer) throw new Error('Not connected');
+                await this.writer.write(data);
+                this.log(`TX: ${data.length} bytes`);
+            }
+
+            updateDeviceInfo(info) {
+                document.getElementById('deviceType').value = info.deviceType;
+                document.getElementById('firmwareVersion').value = info.firmwareVersion;
+                document.getElementById('serialNumber').value = info.serialNumber;
+                document.getElementById('currentFirmware').value = info.firmwareVersion;
+            }
+
+            log(message) {
+                const console = document.getElementById('protocolConsole');
+                const timestamp = new Date().toLocaleTimeString();
+                const line = document.createElement('div');
+                line.className = 'console-line';
+                line.innerHTML = `<span class="console-timestamp">[${timestamp}]</span> ${message}`;
+                console.appendChild(line);
+                console.scrollTop = console.scrollHeight;
+            }
+        }
+
+        // UI Controller
+        class UIController {
+            constructor() {
+                this.connection = new WebSerialConnection();
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                // Connection
+                document.getElementById('connectBtn').addEventListener('click', () => this.toggleConnection());
+
+                // Tabs
+                document.querySelectorAll('.tab').forEach(tab => {
+                    tab.addEventListener('click', () => this.switchTab(tab.dataset.tab));
+                });
+
+                // Device operations
+                document.getElementById('pingBtn').addEventListener('click', () => this.pingDevice());
+                document.getElementById('systemInfoBtn').addEventListener('click', () => this.getSystemInfo());
+
+                // YANG operations
+                document.getElementById('yangGetBtn').addEventListener('click', () => this.yangGet());
+                document.getElementById('yangPutBtn').addEventListener('click', () => this.yangPut());
+                document.getElementById('yangDeleteBtn').addEventListener('click', () => this.yangDelete());
+
+                // TSN operations
+                document.getElementById('tsnStatusBtn').addEventListener('click', () => this.tsnStatus());
+                document.getElementById('tsnConfigBtn').addEventListener('click', () => this.tsnConfig());
+                document.getElementById('tsnStatsBtn').addEventListener('click', () => this.tsnStats());
+
+                // Protocol operations
+                document.getElementById('sendProtocolBtn').addEventListener('click', () => this.sendProtocolMessage());
+                document.getElementById('clearProtocolBtn').addEventListener('click', () => this.clearProtocol());
+
+                // Firmware operations
+                document.getElementById('checkUpdateBtn').addEventListener('click', () => this.checkFirmwareUpdate());
+                document.getElementById('backupBtn').addEventListener('click', () => this.backupFirmware());
+
+                // Console operations
+                document.getElementById('sendRawBtn').addEventListener('click', () => this.sendRawCommand());
+                document.getElementById('clearConsoleBtn').addEventListener('click', () => this.clearConsole());
+                document.getElementById('rawCommand').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.sendRawCommand();
+                });
+            }
+
+            async toggleConnection() {
+                const btn = document.getElementById('connectBtn');
+                const status = document.getElementById('connectionStatus');
+                const text = document.getElementById('connectionText');
+
+                if (!this.connection.connected) {
+                    try {
+                        btn.disabled = true;
+                        btn.textContent = '🔄 연결 중...';
+
+                        await this.connection.connect();
+
+                        status.classList.add('connected');
+                        text.textContent = '연결됨';
+                        btn.textContent = '🔌 연결 해제';
+                        this.enableButtons(true);
+                        this.showToast('WebSerial 연결 성공!', 'success');
+
+                        // Send ping to get device info
+                        setTimeout(() => this.pingDevice(), 1000);
+
+                    } catch (error) {
+                        this.showToast(`연결 실패: ${error.message}`, 'error');
+                        btn.textContent = '🔌 시리얼 포트 연결';
+                    } finally {
+                        btn.disabled = false;
+                    }
+                } else {
+                    await this.connection.disconnect();
+                    status.classList.remove('connected');
+                    text.textContent = '연결 안됨';
+                    btn.textContent = '🔌 시리얼 포트 연결';
+                    this.enableButtons(false);
+                    this.showToast('연결 해제됨', 'success');
+                }
+            }
+
+            switchTab(tabName) {
+                // Update tab buttons
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+                // Update tab contents
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById(tabName).classList.add('active');
+            }
+
+            enableButtons(enabled) {
+                const buttons = [
+                    'pingBtn', 'systemInfoBtn', 'yangGetBtn', 'yangPutBtn', 'yangDeleteBtn',
+                    'tsnStatusBtn', 'tsnConfigBtn', 'tsnStatsBtn', 'sendProtocolBtn',
+                    'checkUpdateBtn', 'backupBtn', 'sendRawBtn'
+                ];
+                buttons.forEach(id => {
+                    document.getElementById(id).disabled = !enabled;
+                });
+            }
+
+            async pingDevice() {
+                try {
+                    const frame = this.connection.protocol.createPing();
+                    await this.connection.sendBytes(frame);
+                    this.showToast('Ping 전송됨', 'success');
+                } catch (error) {
+                    this.showToast(`Ping 실패: ${error.message}`, 'error');
+                }
+            }
+
+            async getSystemInfo() {
+                try {
+                    const result = await this.connection.coap.get('ietf-system:system-state/platform');
+                    this.connection.log(`System info: ${JSON.stringify(result)}`);
+                    this.showToast('시스템 정보 조회 완료', 'success');
+                } catch (error) {
+                    this.showToast(`시스템 정보 조회 실패: ${error.message}`, 'error');
+                }
+            }
+
+            async yangGet() {
+                const path = document.getElementById('yangPath').value;
+                if (!path) {
+                    this.showToast('Path를 입력하세요', 'error');
+                    return;
+                }
+
+                try {
+                    const result = await this.connection.coap.get(path);
+                    this.displayYangResult(result);
+                    this.showToast('YANG GET 성공', 'success');
+                } catch (error) {
+                    this.showToast(`YANG GET 실패: ${error.message}`, 'error');
+                }
+            }
+
+            async yangPut() {
+                const path = document.getElementById('yangPath').value;
+                const dataStr = document.getElementById('yangData').value;
+
+                if (!path || !dataStr) {
+                    this.showToast('Path와 Data를 모두 입력하세요', 'error');
+                    return;
+                }
+
+                try {
+                    const data = JSON.parse(dataStr);
+                    const result = await this.connection.coap.put(path, data);
+                    this.displayYangResult(result);
+                    this.showToast('YANG PUT 성공', 'success');
+                } catch (error) {
+                    this.showToast(`YANG PUT 실패: ${error.message}`, 'error');
+                }
+            }
+
+            async yangDelete() {
+                const path = document.getElementById('yangPath').value;
+                if (!path) {
+                    this.showToast('Path를 입력하세요', 'error');
+                    return;
+                }
+
+                try {
+                    await this.connection.coap.delete(path);
+                    this.showToast('YANG DELETE 성공', 'success');
+                } catch (error) {
+                    this.showToast(`YANG DELETE 실패: ${error.message}`, 'error');
+                }
+            }
+
+            displayYangResult(result) {
+                const tree = document.getElementById('yangTree');
+                tree.innerHTML = '';
+
+                const node = document.createElement('div');
+                node.className = 'tree-node';
+                node.textContent = JSON.stringify(result, null, 2);
+                tree.appendChild(node);
+            }
+
+            async tsnStatus() {
+                const feature = document.getElementById('tsnFeature').value;
+                try {
+                    const result = await this.connection.coap.get(`ieee802-dot1q-tsn:tsn/${feature}/status`);
+                    this.connection.log(`TSN ${feature} status: ${JSON.stringify(result)}`);
+                    this.showToast(`TSN ${feature} 상태 조회 완료`, 'success');
+                } catch (error) {
+                    this.showToast(`TSN 상태 조회 실패: ${error.message}`, 'error');
+                }
+            }
+
+            async tsnConfig() {
+                this.showToast('TSN 구성 기능은 개발 중입니다', 'error');
+            }
+
+            async tsnStats() {
+                this.showToast('TSN 통계 기능은 개발 중입니다', 'error');
+            }
+
+            sendProtocolMessage() {
+                this.showToast('프로토콜 메시지 기능은 개발 중입니다', 'error');
+            }
+
+            clearProtocol() {
+                document.getElementById('protocolMessage').value = '';
+            }
+
+            checkFirmwareUpdate() {
+                this.showToast('펌웨어 업데이트 확인 기능은 개발 중입니다', 'error');
+            }
+
+            backupFirmware() {
+                this.showToast('펌웨어 백업 기능은 개발 중입니다', 'error');
+            }
+
+            async sendRawCommand() {
+                const command = document.getElementById('rawCommand').value.trim();
+                if (!command) return;
+
+                try {
+                    const frame = this.connection.protocol.createSystemRequest(command);
+                    await this.connection.sendBytes(frame);
+                    document.getElementById('rawCommand').value = '';
+                    this.showToast('Raw 명령 전송됨', 'success');
+                } catch (error) {
+                    this.showToast(`Raw 명령 실패: ${error.message}`, 'error');
+                }
+            }
+
+            clearConsole() {
+                document.getElementById('protocolConsole').innerHTML = `
+                    <div class="console-line">
+                        <span class="console-timestamp">[${new Date().toLocaleTimeString()}]</span> Console cleared...
+                    </div>
+                `;
+            }
+
+            showToast(message, type = 'success') {
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+
+                // Trigger animation
+                setTimeout(() => toast.classList.add('show'), 100);
+
+                // Remove after 3 seconds
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+        }
+
+        // Initialize application
+        const ui = new UIController();
+        console.log('VelocityDRIVE WebSerial GUI initialized');
+    </script>
+</body>
+</html>
