@@ -899,6 +899,7 @@
                 this.devices = new Map();
                 this.activeConnections = new Map();
                 this.currentPage = 'discovery';
+                this.simulationMode = false;
                 this.init();
             }
 
@@ -924,8 +925,29 @@
 
             checkWebSerialSupport() {
                 if (!('serial' in navigator)) {
-                    this.showNotification('WebSerial API not supported. Please use Chrome or Edge.', 'error');
+                    console.log('WebSerial not supported - enabling simulation mode');
+                    this.simulationMode = true;
+                    this.addSimulationBanner();
                 }
+            }
+
+            addSimulationBanner() {
+                const banner = document.createElement('div');
+                banner.style.cssText = `
+                    position: fixed;
+                    top: 80px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: var(--accent-orange);
+                    color: white;
+                    padding: 0.5rem 1.5rem;
+                    border-radius: 20px;
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                    z-index: 999;
+                `;
+                banner.textContent = '🎭 시뮬레이션 모드 (실제 장치 없음)';
+                document.body.appendChild(banner);
             }
 
             async scanForDevices() {
@@ -939,22 +961,27 @@
                 scanIcon.textContent = '⏳';
 
                 try {
-                    // Request port access
-                    const port = await navigator.serial.requestPort();
+                    if (this.simulationMode) {
+                        // Simulate device discovery
+                        await this.simulateDeviceDiscovery();
+                    } else {
+                        // Request port access
+                        const port = await navigator.serial.requestPort();
 
-                    // Try to connect and identify device
-                    await port.open({ baudRate: 115200 });
+                        // Try to connect and identify device
+                        await port.open({ baudRate: 115200 });
 
-                    const deviceInfo = await this.identifyDevice(port);
+                        const deviceInfo = await this.identifyDevice(port);
 
-                    // Add to devices map
-                    const deviceId = `device_${Date.now()}`;
-                    this.devices.set(deviceId, {
-                        id: deviceId,
-                        port: port,
-                        info: deviceInfo,
-                        connected: true
-                    });
+                        // Add to devices map
+                        const deviceId = `device_${Date.now()}`;
+                        this.devices.set(deviceId, {
+                            id: deviceId,
+                            port: port,
+                            info: deviceInfo,
+                            connected: true
+                        });
+                    }
 
                     // Update UI
                     this.updateDeviceGrid();
@@ -973,6 +1000,38 @@
                     scanText.textContent = 'Scan Ports';
                     scanIcon.textContent = '🔍';
                 }
+            }
+
+            async simulateDeviceDiscovery() {
+                // Simulate delay
+                await new Promise(resolve => setTimeout(resolve, 1500));
+
+                // Add simulated devices
+                const simulatedDevices = [
+                    {
+                        type: 'LAN9662',
+                        firmware: 'v2025.07.12',
+                        serial: 'SIM-001',
+                        port: '/dev/ttyACM0'
+                    },
+                    {
+                        type: 'LAN9662-TSN',
+                        firmware: 'v2025.06.15',
+                        serial: 'SIM-002',
+                        port: '/dev/ttyACM1'
+                    }
+                ];
+
+                simulatedDevices.forEach((info, index) => {
+                    const deviceId = `sim_device_${Date.now()}_${index}`;
+                    this.devices.set(deviceId, {
+                        id: deviceId,
+                        port: null, // No real port in simulation
+                        info: info,
+                        connected: true,
+                        simulated: true
+                    });
+                });
             }
 
             async identifyDevice(port) {
@@ -1097,7 +1156,7 @@
                         <div class="device-info">
                             <div class="info-row">
                                 <span class="info-label">Port</span>
-                                <span class="info-value">/dev/ttyACM0</span>
+                                <span class="info-value">${device.info.port || '/dev/ttyACM0'}</span>
                             </div>
                             <div class="info-row">
                                 <span class="info-label">Firmware</span>
